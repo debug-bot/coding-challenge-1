@@ -102,6 +102,14 @@ def get_animals(page: int = 1, per_page: int = PAGE_SIZE):
 
 @app.get("/animals/v1/animals/{animal_id}", response_model=Animal)
 def get_animal(animal_id: int):
+    """
+    Return full animal details.
+    - Returns 404 if ID is out of range.
+    """
+    if not isinstance(animal_id, int) or animal_id < 0:
+        raise HTTPException(status_code=400, detail="Invalid animal ID")
+    if animal_id >= len(ANIMALS):
+        raise HTTPException(status_code=404, detail="Animal not found")
     return ANIMALS[animal_id]
 
 
