@@ -74,12 +74,30 @@ def dump_model(m: BaseModel, **kwargs):
 
 
 @app.get("/animals/v1/animals", response_model=Animals)
-def get_animals(page: int = 1):
-    start_index = PAGE_SIZE * (page - 1)
-    end_index = start_index + PAGE_SIZE
-    animals = ANIMALS[start_index:end_index]
-    animals = [dump_model(a, exclude={"friends"}) for a in animals]
-    return Animals(items=animals, page=page, total_pages=TOTAL_PAGES)
+def get_animals(page: int = 1, per_page: int = PAGE_SIZE):
+    """
+    Paginated listing:
+    - page: 1-based page index
+    - per_page: page size (1..100), default=PAGE_SIZE
+    """
+    if page < 1:
+        raise HTTPException(status_code=400, detail="page must be >= 1")
+    if per_page < 1 or per_page > 100:
+        raise HTTPException(status_code=400, detail="per_page must be between 1 and 100")
+
+    total = len(ANIMALS)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+
+    start_index = per_page * (page - 1)
+    end_index = start_index + per_page
+
+    # empty page when out of range is okay; clients can stop when items == []
+    animals_slice = ANIMALS[start_index:end_index] if start_index < total else []
+
+    # exclude "friends" in the listing payload, as before
+    animals = [a.dict(exclude={"friends"}) for a in animals_slice]
+
+    return Animals(items=animals, page=page, total_pages=total_pages)
 
 
 @app.get("/animals/v1/animals/{animal_id}", response_model=Animal)
