@@ -1,7 +1,7 @@
 # 🐾 Animals ETL Challenge
 
 This repository implements a **FastAPI-based mock server** (`animal_api.py`) and a **resilient ETL client** (`loader.py`) that interact through HTTP.
-The project simulates real-world conditions with random latency and transient 5xx errors, testing your ability to build fault-tolerant, maintainable data pipelines.
+The project simulates real-world conditions with random latency and transient 5xx errors, testing ability to build fault-tolerant, maintainable data pipelines.
 
 ---
 
