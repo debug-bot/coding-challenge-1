@@ -1,11 +1,11 @@
 import asyncio
-import datetime
 import json
 import os
 import random
 import time
 from pathlib import Path
 from typing import Any, Iterator, List, Optional
+from datetime import datetime, timezone
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from pydantic import BaseModel
@@ -31,9 +31,16 @@ class Animal(BaseAnimal):
     friends: str
 
 
+class AnimalOut(BaseModel):
+    id: int
+    name: str
+    friends: List[str]
+    born_at: Optional[datetime]
+
+
 class IncomingAnimal(BaseAnimal):
     friends: List[str]
-    born_at: Optional[datetime.datetime]
+    born_at: Optional[datetime]
 
 
 class ListingMeta(BaseModel):
@@ -100,17 +107,36 @@ def get_animals(page: int = 1, per_page: int = PAGE_SIZE):
     return Animals(items=animals, page=page, total_pages=total_pages)
 
 
-@app.get("/animals/v1/animals/{animal_id}", response_model=Animal)
+@app.get("/animals/v1/animals/{animal_id}", response_model=AnimalOut)
 def get_animal(animal_id: int):
     """
     Return full animal details.
+    - friends -> list[str]
+    - born_at -> ISO8601 UTC timestamp
     - Returns 404 if ID is out of range.
     """
     if not isinstance(animal_id, int) or animal_id < 0:
         raise HTTPException(status_code=400, detail="Invalid animal ID")
     if animal_id >= len(ANIMALS):
         raise HTTPException(status_code=404, detail="Animal not found")
-    return ANIMALS[animal_id]
+
+    animal = ANIMALS[animal_id]
+
+    # Convert born_at (epoch ms) to ISO8601 UTC
+    born_at = None
+    if animal.born_at:
+        born_at = datetime.fromtimestamp(animal.born_at / 1000, tz=timezone.utc).isoformat().replace("+00:00", "Z")
+
+    # Convert friends to list
+    friends_list = [f for f in animal.friends.split(",") if f]
+
+    return AnimalOut(
+        id=animal.id,
+        name=animal.name,
+        born_at=born_at,
+        friends=friends_list,
+    )
+
 
 
 @app.post("/animals/v1/home")
