@@ -1,0 +1,27 @@
+version: "3.8"
+
+services:
+  api:
+    build: .
+    image: animals-api:latest
+    container_name: animals_api
+    ports:
+      - "3123:3123"
+    environment:
+      # Set to "1" to enable verification countdown on /animals/v1/home
+      - VERIFY=0
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3123/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  loader:
+    image: animals-api:latest   # reuse same image; loader has httpx installed
+    container_name: animals_loader
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      - ANIMALS_BASE_URL=http://api:3123
+    command: ["python", "loader.py", "--base-url", "http://api:3123", "--concurrency", "32", "--batch-size", "100"]
