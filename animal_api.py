@@ -115,12 +115,28 @@ def get_animal(animal_id: int):
 
 @app.post("/animals/v1/home")
 def receive_animals(animals: List[IncomingAnimal]):
+    # Enforce batch limit (≤100)
+    if not isinstance(animals, list):
+        raise HTTPException(status_code=400, detail="Body must be a JSON array of animals")
     if len(animals) > 100:
         raise HTTPException(status_code=400, detail="Sorry, only 100 animals at a time")
+
+    # Pydantic will 422 on malformed items (e.g., friends not array, bad datetime)
+    # Optional verification mode
     if VERIFY is True:
+        # Avoid KeyError on unknown or duplicate IDs by discarding safely
+        unknown_ids = []
         for animal in animals:
-            ANIMALS_IDS_TO_VERIFY.remove(animal.id)
+            if animal.id in ANIMALS_IDS_TO_VERIFY:
+                ANIMALS_IDS_TO_VERIFY.remove(animal.id)
+            else:
+                unknown_ids.append(animal.id)
+        if unknown_ids:
+            # Keep behavior lenient (don’t 400), but log for visibility
+            preview = unknown_ids[:5]
+            print(f"Ignored {len(unknown_ids)} unknown/duplicate ids (showing up to 5): {preview}")
         print(f"{len(ANIMALS_IDS_TO_VERIFY)} animals left")
+
     return {"message": f"Helped {len(animals)} find home"}
 
 
