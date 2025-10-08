@@ -1,5 +1,6 @@
-fastapi==0.118.0
-uvicorn==0.37.0
+# Runtime
 httpx==0.28.1
+
+# Testing
 pytest==8.4.2
 pytest-asyncio==1.2.0
