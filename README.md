@@ -45,7 +45,7 @@ The system demonstrates fault-tolerant data engineering practices, handling slow
 
 | Tool           | Version                       |
 | -------------- | ----------------------------- |
-| Python         | 3.11, 3.12, 3.13              |
+| Python         | 3.11 - 3.13                   |
 | Docker         | 20+                           |
 | docker-compose | 1.29+                         |
 | Dependencies   | httpx, pytest, pytest-asyncio |
@@ -60,7 +60,7 @@ The system demonstrates fault-tolerant data engineering practices, handling slow
 docker load -i lp-programming-challenge-1-*.tar.gz
 ```
 
-### 2️⃣ Build and start the loader with the real API
+### 2️⃣ Build and start the loader with the API
 
 ```bash
 docker compose up --build
@@ -70,7 +70,7 @@ This command:
 
 * Starts the **provided API** (`lp-programming-challenge-1:latest`) on port **3123**.
 * Builds and runs the **loader** container.
-* Waits until the API healthcheck (`GET /` → `Hello`) passes before executing.
+* Waits until the API healthcheck (`GET /` → `Hello!`) passes before executing.
 
 #### Expected output
 
@@ -85,7 +85,7 @@ animals_loader | ✅ Loaded 5520 animals successfully
 
 ## 🔍 Healthcheck
 
-* The API is healthy when `curl http://localhost:3123/` returns `HELLO`.
+* The API is healthy when `curl http://localhost:3123/` returns `Hello!`.
 * Docker Compose uses a built-in healthcheck to ensure the loader waits for the API.
 
 ---
@@ -160,7 +160,7 @@ This ensures compatibility across Python versions and prevents regressions.
 
 | Requirement                                 | Status  | Notes                                           |
 | ------------------------------------------- | ------  | ----------------------------------------------- |
-| **Uses provided API Docker image**          | ✅      |                                                 |
+| **Uses provided API Docker image**          | ✅      | Connects to lp-programming-challenge-1:latest   |
 | **Connects to real API**                    | ✅      | Targets `lp-programming-challenge-1:latest`     |
 | **Handles real chaos (5–15s delays + 5xx)** | ✅      | Backoff, retries, and long timeouts implemented |
 | **Fetch all animals**                       | ✅      | Full pagination supported                       |
