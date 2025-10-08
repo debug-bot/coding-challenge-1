@@ -53,6 +53,8 @@ The system demonstrates fault-tolerant data engineering practices, handling slow
 | Docker         | 20+                           |
 | docker-compose | 1.29+                         |
 | Dependencies   | httpx, pytest, pytest-asyncio |
+| Formatter      | Black 24.8.0                  |
+| Pre-commiiter  | 3.8.0                         |
 
 ---
 
@@ -117,15 +119,31 @@ The test suite covers:
 
 ---
 
+## 🧹 Code Style (Black & Pre-commit)
+
+To ensure consistent formatting, this project uses [Black](https://black.readthedocs.io/en/stable/) and [pre-commit](https://pre-commit.com/).
+
+Install and run:
+
+```bash
+pip install black pre-commit
+pre-commit install
+black .
+
+---
+```md
 ## 🧩 CI/CD Pipeline
 
-A GitHub Actions workflow runs all tests automatically:
+GitHub Actions runs full CI/CD for this repository:
+
+* ✅ **Black + Pre-commit** style checks  
+* ✅ **Unit tests** (pytest, pytest-asyncio) across Python 3.11–3.13  
+* ✅ **Docker image build and push to GHCR**
 
 ```yaml
 python-version: ["3.11", "3.12", "3.13"]
-```
-
-This ensures compatibility across Python versions and prevents regressions.
+The Docker workflow builds and publishes the loader image to:
+`ghcr.io/debug-bot/coding-challenge-1/animals-loader`
 
 ---
 
