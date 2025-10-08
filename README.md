@@ -131,7 +131,7 @@ pre-commit install
 black .
 
 ---
-```md
+
 ## 🧩 CI/CD Pipeline
 
 GitHub Actions runs full CI/CD for this repository:
@@ -142,7 +142,8 @@ GitHub Actions runs full CI/CD for this repository:
 
 ```yaml
 python-version: ["3.11", "3.12", "3.13"]
-The Docker workflow builds and publishes the loader image to:
+
+The Docker workflow builds and publishes the loader image to:  
 `ghcr.io/debug-bot/coding-challenge-1/animals-loader`
 
 ---
