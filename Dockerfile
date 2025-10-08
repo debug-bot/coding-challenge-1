@@ -11,7 +11,7 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy only what the loader needs
-COPY loader.py /app/loader.py
+COPY loader.py wait_for_api.py ./
 
 # Default to running the loader; can be overridden by docker-compose
 CMD ["python", "loader.py"]

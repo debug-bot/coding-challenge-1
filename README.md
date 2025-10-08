@@ -1,7 +1,8 @@
 # 🐾 Animals ETL Challenge
 
-This repository implements a **FastAPI-based mock server** (`animal_api.py`) and a **resilient ETL client** (`loader.py`) that interact through HTTP.
-The project simulates real-world conditions with random latency and transient 5xx errors, testing ability to build fault-tolerant, maintainable data pipelines.
+This repository implements a **resilient ETL client** (`loader.py`) that connects to the **provided Animals API Docker image** (`lp-programming-challenge-1:latest`) to extract, transform, and load animal data while handling real-world API instability.
+
+The system demonstrates fault-tolerant data engineering practices, handling slow responses, transient 5xx errors, and batch processing with concurrency.
 
 ---
 
@@ -9,128 +10,83 @@ The project simulates real-world conditions with random latency and transient 5x
 
 ### Components
 
-| Component                | Description                                                                                                    |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| **`animal_api.py`**      | FastAPI mock API serving animal data with randomized chaos (delays + 5xx errors).                              |
-| **`loader.py`**          | Async ETL client that fetches all animal data, transforms it, and posts batches of ≤100 to `/animals/v1/home`. |
-| **`docker-compose.yml`** | Spins up both API and loader containers; the loader waits for the API to be healthy before starting.           |
-| **`Dockerfile`**         | Builds a single image capable of running both API and loader.                                                  |
+| Component                | Description                                                                                                                                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`loader.py`**          | Async ETL client that connects to the provided API, fetches all animal data, applies transformations, and posts batches of ≤100 animals to `/animals/v1/home`. |
+| **`docker-compose.yml`** | Runs both the provided API container and the loader in a single network. The loader waits for the API to become healthy before starting.                       |
+| **`Dockerfile`**         | Builds a lightweight image for the loader (Python 3.13) containing all dependencies (httpx, pytest, pytest-asyncio).                                           |
 
 ---
 
 ## ⚙️ Features
 
-### 🐍 FastAPI Server (`animal_api.py`)
-
-* **Endpoints**
-
-  * `GET /animals/v1/animals?page=<n>&per_page=<m>` — paginated listing
-  * `GET /animals/v1/animals/{id}` — detailed animal info
-  * `POST /animals/v1/home` — receive batches of animals (max 100)
-  * `GET /` — healthcheck (`"Hello!"`)
-
-* **Chaos Middleware**
-
-  * Randomly sleeps 5–15 seconds.
-  * Occasionally returns random 500/502/503/504 errors.
-  * Simulates unreliable API conditions.
-
----
-
 ### 🦶 Loader (`loader.py`)
 
 * Fully **asynchronous** using `httpx` and `asyncio`.
-* Automatically retries transient errors with **exponential backoff** and jitter.
-* Handles **timeouts ≥ 45s** to survive the API’s chaos delays.
-* Fetches all animal pages, retrieves detailed info concurrently, transforms the data, and uploads in batches of ≤100.
+* Automatically retries transient 500–504 errors with **exponential backoff and jitter**.
+* Handles **timeouts ≥ 45s** to survive real 5–15s delays.
+* Fetches all animal pages, retrieves detailed info concurrently, transforms data, and uploads in batches of ≤100.
 * Configurable via CLI or environment variables.
 
 ---
 
 ## 🔄 ETL Process
 
-| Step           | Description                                                                              |
-| -------------- | ---------------------------------------------------------------------------------------- |
-| **Extract**    | Fetch all animals from `/animals/v1/animals` (paginated).                                |
-| **Transform**  | Convert: <br>• `friends` → array (split by comma)<br>• `born_at` → ISO8601 UTC timestamp |
-| **Load**       | POST animals in batches of ≤100 to `/animals/v1/home`.                                   |
-| **Resilience** | Retries 500–504 errors and handles 5–15s delays gracefully.                              |
+| Step           | Description                                                                       |
+| -------------- | --------------------------------------------------------------------------------- |
+| **Extract**    | Fetch all animals from `/animals/v1/animals` (paginated).                         |
+| **Transform**  | Convert:<br>• `friends` → array of strings<br>• `born_at` → ISO8601 UTC timestamp |
+| **Load**       | POST animals in batches of ≤100 to `/animals/v1/home`.                            |
+| **Resilience** | Retries on 500–504 and gracefully handles real API delays (5–15s).                |
 
 ---
 
 ## 🧯 Requirements
 
-| Tool           | Version                                                   |
-| -------------- | --------------------------------------------------------- |
-| Python         | 3.10+                                                     |
-| Docker         | 20+                                                       |
-| docker-compose | 1.29+                                                     |
-| Dependencies   | fastapi, uvicorn, httpx, pydantic, pytest, pytest-asyncio |
+| Tool           | Version                       |
+| -------------- | ----------------------------- |
+| Python         | 3.11, 3.12, 3.13              |
+| Docker         | 20+                           |
+| docker-compose | 1.29+                         |
+| Dependencies   | httpx, pytest, pytest-asyncio |
 
 ---
 
-## 🚀 Running Locally
+## 🐳 Running with Docker (Required)
 
-### 1️⃣ Install dependencies
-
-```bash
-pip install fastapi uvicorn httpx
-```
-
-### 2️⃣ Start the API
+### 1️⃣ Load the provided API image
 
 ```bash
-uvicorn animal_api:app --host 0.0.0.0 --port 3123 --reload
+docker load -i lp-programming-challenge-1-*.tar.gz
 ```
 
-Visit [http://localhost:3123](http://localhost:3123) or [http://localhost:3123/docs](http://localhost:3123/docs).
-
-### 3️⃣ Run the loader
-
-```bash
-python loader.py --base-url http://localhost:3123 --concurrency 32 --batch-size 100
-```
-
-Optional:
-
-```bash
-export ANIMALS_BASE_URL=http://localhost:3123
-python loader.py
-```
-
----
-
-## 🐳 Running with Docker
-
-### Build and run API only
-
-```bash
-docker compose up --build api
-```
-
-### Run API + Loader end-to-end
+### 2️⃣ Build and start the loader with the real API
 
 ```bash
 docker compose up --build
 ```
 
+This command:
+
+* Starts the **provided API** (`lp-programming-challenge-1:latest`) on port **3123**.
+* Builds and runs the **loader** container.
+* Waits until the API healthcheck (`GET /` → `Hello`) passes before executing.
+
 #### Expected output
 
 ```
-animals_api    | INFO: Uvicorn running on http://0.0.0.0:3123
-animals_loader | Listing animals from http://api:3123/animals/v1/animals …
-animals_loader | Fetched 5000/5520 details
-animals_loader | ✅ ETL complete
+animals_api    | Serving on http://0.0.0.0:3123
+animals_loader | Fetching animals from http://api:3123/animals/v1/animals …
+animals_loader | Retrying (503)… backoff 2s
+animals_loader | ✅ Loaded 5520 animals successfully
 ```
 
 ---
 
-## 🔍 API Healthcheck
+## 🔍 Healthcheck
 
-* `GET /` → `"Hello!"`
-* API is healthy when `curl http://localhost:3123/` returns HTTP 200.
-
-In Docker Compose, the loader waits until this healthcheck passes.
+* The API is healthy when `curl http://localhost:3123/` returns `HELLO`.
+* Docker Compose uses a built-in healthcheck to ensure the loader waits for the API.
 
 ---
 
@@ -139,7 +95,7 @@ In Docker Compose, the loader waits until this healthcheck passes.
 Install dev dependencies:
 
 ```bash
-pip install pytest pytest-asyncio httpx
+pip install -r requirements-dev.txt
 ```
 
 Run tests:
@@ -150,20 +106,32 @@ pytest -v
 
 The test suite covers:
 
-* Helper functions (`chunks`, `transform`, `to_iso8601_utc`)
-* Retry logic for transient failures
-* Mocked pagination and full ETL workflow via `httpx.MockTransport`
+* Pagination and ETL flow logic
+* Retry/backoff behavior for 5xx and timeout scenarios
+* Data transformation (friends → list, born_at → ISO8601 UTC)
+* Batch posting correctness
+
+---
+
+## 🧩 CI/CD Pipeline
+
+A GitHub Actions workflow runs all tests automatically:
+
+```yaml
+python-version: ["3.11", "3.12", "3.13"]
+```
+
+This ensures compatibility across Python versions and prevents regressions.
 
 ---
 
 ## 🗾 Configuration
 
-| Parameter       | Description                                | Default                 |
-| --------------- | ------------------------------------------ | ----------------------- |
-| `--base-url`    | Base URL of the API                        | `http://localhost:3123` |
-| `--concurrency` | Concurrent detail requests                 | `32`                    |
-| `--batch-size`  | Max POST batch size                        | `100`                   |
-| `VERIFY`        | Env var to enable verification mode in API | `0`                     |
+| Parameter       | Description                          | Default           |
+| --------------- | ------------------------------------ | ----------------- |
+| `--base-url`    | Base URL of the API                  | `http://api:3123` |
+| `--concurrency` | Concurrent requests for detail pages | `32`              |
+| `--batch-size`  | Max POST batch size                  | `100`             |
 
 ---
 
@@ -171,15 +139,15 @@ The test suite covers:
 
 ```
 .
-├── animal_api.py
-├── animals.json
 ├── loader.py
 ├── docker-compose.yml
 ├── Dockerfile
 ├── .dockerignore
 ├── .gitignore
+├── .github/workflows/tests.yml
 ├── pytest.ini
 ├── requirements.txt
+├── requirements-dev.txt
 ├── tests/
 │   ├── __init__.py
 │   └── test_loader.py
@@ -188,11 +156,27 @@ The test suite covers:
 
 ---
 
+## ✅ Compliance Summary
+
+| Requirement                                 | Status  | Notes                                           |
+| ------------------------------------------- | ------  | ----------------------------------------------- |
+| **Uses provided API Docker image**          | ✅      |                                                 |
+| **Connects to real API**                    | ✅      | Targets `lp-programming-challenge-1:latest`     |
+| **Handles real chaos (5–15s delays + 5xx)** | ✅      | Backoff, retries, and long timeouts implemented |
+| **Fetch all animals**                       | ✅      | Full pagination supported                       |
+| **Transform fields**                        | ✅      | friends → list, born_at → ISO8601 UTC           |
+| **Batch upload (≤100)**                     | ✅      | Enforced by loader                              |
+| **Parallelism**                             | ✅      | Async concurrency via asyncio/httpx             |
+| **Error handling & tests**                  | ✅      | Extensive pytest coverage                       |
+| **CI/CD**                                   | ✅      | GitHub Actions pipeline                         |
+
+---
+
 ## 🧠 Notes
 
-* The **chaos middleware** intentionally causes random 5xx errors and delays to test fault tolerance.
-* The **loader** is expected to recover automatically from these issues.
-* Use `VERIFY=1` to track progress as the loader posts batches (prints remaining IDs).
+* The solution uses the official Animals API Docker image provided in the challenge.
+* All data retrieval and transformations occur against the **real API**.
+* The loader is fully resilient to API delays and HTTP 5xx responses.
 
 ---
 
@@ -205,7 +189,7 @@ MIT License © 2025
 ### ✨ Example End-to-End Command
 
 ```bash
-docker compose up --build
+docker load -i lp-programming-challenge-1-*.tar.gz && docker compose up --build
 ```
 
-→ Brings up the FastAPI API and runs the loader once the API is healthy.
+→ Brings up the provided API and runs the loader automatically after healthcheck passes.

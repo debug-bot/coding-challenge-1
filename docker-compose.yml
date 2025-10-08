@@ -5,12 +5,7 @@ services:
     image: lp-programming-challenge-1:latest
     container_name: animals_api
     ports:
-      - "3123:3123"
-    healthcheck:
-      test: ["CMD", "sh", "-lc", "wget -qO- http://localhost:3123/ | grep -q HELLO || exit 1"]
-      interval: 5s
-      timeout: 3s
-      retries: 30
+      - "${API_PORT:-3123}:3123"
 
   loader:
     build:
@@ -18,8 +13,11 @@ services:
       dockerfile: Dockerfile
     container_name: animals_loader
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     environment:
-      - ANIMALS_BASE_URL=http://api:3123
-    command: ["python", "loader.py", "--concurrency", "32", "--batch-size", "100"]
+      environment:
+        - ANIMALS_BASE_URL=http://api:3123
+        - WAIT_URL=http://api:3123/
+        - WAIT_TIMEOUT=300         # wait up to 5 minutes
+    restart: on-failure            # retry if wait script exits non-zero
+    command: ["sh", "-c", "python /app/wait_for_api.py 120 && python /app/loader.py --base-url http://api:3123 --concurrency 32 --batch-size 100"]
