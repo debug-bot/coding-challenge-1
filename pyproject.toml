@@ -1,0 +1,23 @@
+[tool.black]
+line-length = 88
+target-version = ["py311", "py312", "py313"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | .*\.pyc
+  | .*\.pyo
+  | .*\.pyd
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.venv
+  | env
+  | venv
+  | __pypackages__
+  | __pycache__
+  | build
+  | dist
+  | migrations
+  | tests/data
+)/
+'''

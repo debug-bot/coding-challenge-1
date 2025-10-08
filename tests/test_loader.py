@@ -23,6 +23,7 @@ from loader import chunks, to_iso8601_utc, transform, get_json, post_json, fetch
 # Pure helper tests
 # ---------------------------
 
+
 def test_chunks_basic():
     # chunks should split a list into fixed-size pieces
     data = list(range(7))
@@ -69,6 +70,7 @@ def test_transform_friends_and_born_at():
 # ---------------------------
 # Retry logic tests (GET/POST)
 # ---------------------------
+
 
 @pytest.mark.asyncio
 async def test_get_json_retries_then_succeeds():
@@ -119,6 +121,7 @@ async def test_post_json_retries_then_succeeds():
 # End-to-end (mocked) flow tests
 # ---------------------------
 
+
 @pytest.mark.asyncio
 async def test_fetch_all_ids_pagination():
     """
@@ -153,13 +156,27 @@ async def test_full_flow_mocked_details_and_post():
     Ensures transform + batching works as expected.
     """
     # Prepare fake pages: 1 page, 3 animals
-    list_payload = {"items": [{"id": 10}, {"id": 11}, {"id": 12}], "page": 1, "total_pages": 1}
+    list_payload = {
+        "items": [{"id": 10}, {"id": 11}, {"id": 12}],
+        "page": 1,
+        "total_pages": 1,
+    }
 
     # Fake details: friends comma string, born_at epoch ms
     details: Dict[int, Dict[str, Any]] = {
-        10: {"id": 10, "name": "Cat", "friends": "Dog,Elephant", "born_at": 1609459200000},
+        10: {
+            "id": 10,
+            "name": "Cat",
+            "friends": "Dog,Elephant",
+            "born_at": 1609459200000,
+        },
         11: {"id": 11, "name": "Dog", "friends": "", "born_at": None},
-        12: {"id": 12, "name": "Elephant", "friends": "Cat", "born_at": "1609459200000"},
+        12: {
+            "id": 12,
+            "name": "Elephant",
+            "friends": "Cat",
+            "born_at": "1609459200000",
+        },
     }
 
     posted_batches: List[List[Dict[str, Any]]] = []
@@ -178,8 +195,9 @@ async def test_full_flow_mocked_details_and_post():
         if request.method == "POST" and request.url.path.endswith("/animals/v1/home"):
             body = json.loads((await request.aread()).decode() or "[]")
             posted_batches.append(body)
-            return httpx.Response(200, json={"message": f"Helped {len(body)} find home"})
-
+            return httpx.Response(
+                200, json={"message": f"Helped {len(body)} find home"}
+            )
 
         return httpx.Response(404)
 
@@ -191,7 +209,9 @@ async def test_full_flow_mocked_details_and_post():
         # Transform each detail and batch post
         transformed = []
         for _id in ids:
-            r = await httpx.AsyncClient(transport=transport).__aenter__()  # create ephemeral client for detail
+            r = await httpx.AsyncClient(
+                transport=transport
+            ).__aenter__()  # create ephemeral client for detail
             try:
                 detail = (await r.get(f"http://x/animals/v1/animals/{_id}")).json()
             finally:
@@ -202,9 +222,13 @@ async def test_full_flow_mocked_details_and_post():
 
         # Post them in batches of 2
         for i in range(0, len(transformed), 2):
-            batch = transformed[i: i + 2]
+            batch = transformed[i : i + 2]
             # Use post_json to exercise retry wrapper as well (here 200 immediate)
-            resp = await post_json(httpx.AsyncClient(transport=transport), "http://x/animals/v1/home", batch)
+            resp = await post_json(
+                httpx.AsyncClient(transport=transport),
+                "http://x/animals/v1/home",
+                batch,
+            )
             assert "Helped" in resp["message"]
 
     # Validate the batches we "posted" were transformed correctly
