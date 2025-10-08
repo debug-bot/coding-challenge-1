@@ -1,3 +1,5 @@
+[![Tests](https://github.com/debug-bot/coding-challenge-1/actions/workflows/tests.yml/badge.svg)](https://github.com/debug-bot/coding-challenge-1/actions/workflows/tests.yml)
+[![Docker](https://github.com/debug-bot/coding-challenge-1/actions/workflows/docker.yml/badge.svg)](https://github.com/debug-bot/coding-challenge-1/actions/workflows/docker.yml)
 # 🐾 Animals ETL Challenge
 
 This repository implements a **resilient ETL client** (`loader.py`) that connects to the **provided Animals API Docker image** (`lp-programming-challenge-1:latest`) to extract, transform, and load animal data while handling real-world API instability.
@@ -145,6 +147,7 @@ This ensures compatibility across Python versions and prevents regressions.
 ├── .dockerignore
 ├── .gitignore
 ├── .github/workflows/tests.yml
+├── .github/workflows/docker.yml
 ├── .pre-commit-config.yaml
 ├── pytest.ini
 ├── requirements.txt
