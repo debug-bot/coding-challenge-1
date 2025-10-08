@@ -145,9 +145,12 @@ This ensures compatibility across Python versions and prevents regressions.
 ├── .dockerignore
 ├── .gitignore
 ├── .github/workflows/tests.yml
+├── .pre-commit-config.yaml
 ├── pytest.ini
 ├── requirements.txt
 ├── requirements-dev.txt
+├── wait_for_api.py
+├── pyproject.toml
 ├── tests/
 │   ├── __init__.py
 │   └── test_loader.py
