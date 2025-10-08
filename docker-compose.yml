@@ -15,9 +15,8 @@ services:
     depends_on:
       - api
     environment:
-      environment:
-        - ANIMALS_BASE_URL=http://api:3123
-        - WAIT_URL=http://api:3123/
-        - WAIT_TIMEOUT=300         # wait up to 5 minutes
+      - ANIMALS_BASE_URL=http://api:3123
+      - WAIT_URL=http://api:3123/
+      - WAIT_TIMEOUT=300         # wait up to 5 minutes
     restart: on-failure            # retry if wait script exits non-zero
     command: ["sh", "-c", "python /app/wait_for_api.py 120 && python /app/loader.py --base-url http://api:3123 --concurrency 32 --batch-size 100"]
